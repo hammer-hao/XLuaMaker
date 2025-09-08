@@ -1,36 +1,56 @@
-import { ReactFlow, Controls, Background } from '@xyflow/react';
+import {
+    ReactFlow,
+    Controls,
+    Background,
+    applyEdgeChanges,
+    applyNodeChanges,
+    addEdge
+} from '@xyflow/react';
+import { useState, useCallback } from 'react';
+import { datarefs } from './data/datarefs';
 import '@xyflow/react/dist/style.css';
+import ExistingDatarefNode from './nodes/existingDataref';
+import Toolbar from './components/toolbar';
 
-const initialNodes = [
-    {
-        id: 'n1',
-        data: { label: 'Node 1' },
-        position: { x: 0, y: 0 },
-        type: 'input',
-    },
-    {
-        id: 'n2',
-        data: { label: 'Node 2' },
-        position: { x: 100, y: 100 },
-    },
-];
+const nodeTypes = {
+    existingDataref: ExistingDatarefNode,
+}
 
-const initialEdges = [
-    {
-        id: "van",
-        source: 'n1',
-        target: 'n2',
-        type: 'step',
-        label: 'van darkholme'
-    }
-]
+console.log(datarefs);
 
 function Flow() {
+    const [nodes, setNodes] = useState([]);
+    const [edges, setEdges] = useState([]);
+
+    const onNodesChange = useCallback(
+        (changes) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
+        [],
+    )
+
+    const onEdgesChange = useCallback(
+        (changes) => setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot)),
+        [],
+    )
+
+    const onConnect = useCallback(
+        (params) => setEdges((eds) => addEdge(params, eds)),
+        [],
+    )
+
     return (
         <div style={{ height: '100%' }}>
-            <ReactFlow nodes={initialNodes} edges={initialEdges} fitView>
+            <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                nodeTypes={nodeTypes}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                fitView
+            >
                 <Background />
                 <Controls />
+                <Toolbar />
             </ReactFlow>
         </div>
     );

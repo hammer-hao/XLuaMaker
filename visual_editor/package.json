@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.13.12",
     "@xyflow/react": "^12.8.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-select": "^5.10.2",
     "reactflow": "^11.11.4"
   },
   "devDependencies": {

@@ -1,34 +1,38 @@
-import { useCallback, useMemo, useRef } from 'react';
-import {Position, type NodeProps, useReactFlow, Handle} from '@xyflow/react';
-import Select, {components, type MenuListProps} from 'react-select';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useCallback, useMemo } from 'react';
+import { Position, type NodeProps, useReactFlow } from '@xyflow/react';
+import Select from 'react-select';
 import type { Dataref } from '../types/types';
 import { TypedHandle } from '../handles/TypedHandle';
 
-type ExistingDatarefNodeData = {
-    value: string;                   // selected dataref name
-    datarefs: Dataref[];             // all options
+// Reuse your ExistingDatarefNodeData shape so it can be constructed the same way.
+type WriteDatarefNodeData = {
+    value: string;
+    datarefs: Dataref[];
     onChange?: (value: string) => void;
     isConnectable?: boolean;
 };
 
 type Option = { value: string; label: string };
 
+// If you already have VirtualizedMenuList exported elsewhere, import and use that instead.
+import { components, type MenuListProps } from 'react-select';
+import { useVirtualizer } from '@tanstack/react-virtual';
 function VirtualizedMenuList<Option, IsMulti extends boolean>(
     props: MenuListProps<Option, IsMulti>
 ) {
-    const { children, maxHeight = 240} = props;
-    // children is an array of <Option/> elements from react-select
+    const { children, maxHeight = 240 } = props;
     const items = Array.isArray(children) ? children : [children];
+    const parentRef = (globalThis as any).React?.useRef<HTMLDivElement | null>(null) ?? null;
 
-    const parentRef = useRef<HTMLDivElement | null>(null);
-    const rowHeight = 34;
+    // Fallback if not using React.useRef above; replace with your own ref if needed.
+    // @ts-ignore
+    const ref = parentRef || { current: null };
 
     const virtualizer = useVirtualizer({
         count: items.length,
-        getScrollElement: () => parentRef.current,
-        estimateSize: () => rowHeight,
-        overscan: 6,
+        getScrollElement: () => ref.current,
+        estimateSize: () => 34,
+        overscan: 6
     });
 
     const totalHeight = virtualizer.getTotalSize();
@@ -36,10 +40,7 @@ function VirtualizedMenuList<Option, IsMulti extends boolean>(
 
     return (
         <components.MenuList {...props}>
-            <div
-                ref={parentRef}
-                style={{ maxHeight, overflow: 'auto', position: 'relative' }}
-            >
+            <div ref={ref as any} style={{ maxHeight, overflow: 'auto', position: 'relative' }}>
                 <div style={{ height: totalHeight, position: 'relative' }}>
                     {virtualItems.map(v => (
                         <div
@@ -49,7 +50,7 @@ function VirtualizedMenuList<Option, IsMulti extends boolean>(
                                 top: 0,
                                 left: 0,
                                 right: 0,
-                                transform: `translateY(${v.start}px)`,
+                                transform: `translateY(${v.start}px)`
                             }}
                         >
                             {items[v.index]}
@@ -61,7 +62,11 @@ function VirtualizedMenuList<Option, IsMulti extends boolean>(
     );
 }
 
-function ExistingDatarefNode({ id, data, isConnectable }: NodeProps<ExistingDatarefNodeData>) {
+export default function WriteDatarefNode({
+                                             id,
+                                             data,
+                                             isConnectable
+                                         }: NodeProps<WriteDatarefNodeData>) {
     const { setNodes } = useReactFlow();
 
     const options = useMemo<Option[]>(
@@ -82,11 +87,11 @@ function ExistingDatarefNode({ id, data, isConnectable }: NodeProps<ExistingData
                     node.id === id ? { ...node, data: { ...node.data, value: next } } : node
                 )
             );
+            data.onChange?.(next);
         },
-        [id, setNodes]
+        [id, setNodes, data]
     );
 
-    // Find the selected dataref by name (unchanged)
     const selected = useMemo(
         () => data.datarefs.find(d => d.name === data.value),
         [data.datarefs, data.value]
@@ -94,8 +99,9 @@ function ExistingDatarefNode({ id, data, isConnectable }: NodeProps<ExistingData
 
     return (
         <div
-            className="existing-dataref-node"
+            className="write-dataref-node"
             style={{
+                position: 'relative',          // enable absolute positioning for handles/labels
                 border: '1px solid #cbd5e1',
                 borderRadius: 8,
                 padding: 10,
@@ -104,27 +110,72 @@ function ExistingDatarefNode({ id, data, isConnectable }: NodeProps<ExistingData
                 maxWidth: 420
             }}
         >
+            {/* Left-side INPUT (target) handles */}
+            <TypedHandle
+                id="exec:in"
+                flowType="exec"
+                type="target"
+                position={Position.Left}
+                isConnectable={isConnectable}
+                style={{ top: 18 }}
+            />
+            <div
+                style={{
+                    position: 'absolute',
+                    left: -6,
+                    top: 4,
+                    transform: 'translateX(-100%)',
+                    fontSize: 10,
+                    color: '#475569',
+                    userSelect: 'none'
+                }}
+            >
+                exec
+            </div>
+
+            <TypedHandle
+                id="data:in"
+                flowType="int"
+                type="target"
+                position={Position.Left}
+                isConnectable={isConnectable}
+                style={{ top: 54 }}
+            />
+            <div
+                style={{
+                    position: 'absolute',
+                    left: -6,
+                    top: 40,
+                    transform: 'translateX(-100%)',
+                    fontSize: 10,
+                    color: '#475569',
+                    userSelect: 'none'
+                }}
+            >
+                int
+            </div>
+
+            {/* Body */}
             <div style={{ minWidth: 280 }}>
-                <label htmlFor={`dataref-${id}`} style={{ display: 'block', marginBottom: 4 }}>
-                    Dataref:
+                <label htmlFor={`wdataref-${id}`} style={{ display: 'block', marginBottom: 4 }}>
+                    Dataref (write target):
                 </label>
                 <Select
-                    inputId={`dataref-${id}`}
-                    instanceId={`dataref-${id}`}     // avoids SSR/id warnings
-                    className="nodrag"               // lets you interact without dragging the node
+                    inputId={`wdataref-${id}`}
+                    instanceId={`wdataref-${id}`}
+                    className="nodrag"
                     options={options}
                     value={selectedOption}
                     onChange={handleChange}
                     isClearable
-                    placeholder="Select a dataref"
-                    menuPortalTarget={document.body} // optional: keeps menu above the canvas
+                    placeholder="Select a dataref to write"
+                    menuPortalTarget={document.body}
                     styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
                     components={{ MenuList: VirtualizedMenuList }}
                     maxMenuHeight={240}
                 />
             </div>
 
-            {/* Details panel (unchanged) */}
             {selected && (
                 <div
                     style={{
@@ -183,25 +234,6 @@ function ExistingDatarefNode({ id, data, isConnectable }: NodeProps<ExistingData
                     )}
                 </div>
             )}
-            {/*<TypedHandle id="data:out" flowType="int" type="source" position={Position.Right} isConnectable={isConnectable} />*/}
-            <Handle
-                id="data:out"
-                type="source"
-                position={Position.Right}
-                isConnectable={isConnectable}
-                className="rf-hitbox"
-            >
-                <span
-                    className={`socket socket--circle`}
-                    style={{
-                        '--socket-color': 'blue',
-                        '--socket-glow': 'blue',
-                    } as React.CSSProperties}
-                    title="int"
-                />
-            </Handle>
         </div>
     );
 }
-
-export default ExistingDatarefNode;

@@ -61,6 +61,36 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+/* sockets */
+.socket {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 14px; height: 14px;
+    background: var(--socket-color);
+    box-shadow: 0 0 0 2px #0f172a inset, 0 0 8px 0 var(--socket-glow);
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+.socket:hover { transform: scale(1.08); box-shadow: 0 0 0 2px #0f172a inset, 0 0 12px 0 var(--socket-glow); }
+
+/* shapes */
+.socket--circle { border-radius: 999px; }
+.socket--square { border-radius: 4px; }
+.socket--diamond { transform: rotate(45deg); border-radius: 4px; }
+.socket--hex    { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
+.socket--pill   { width: 18px; height: 10px; border-radius: 999px; }
+.socket--exec {
+    clip-path: polygon(0 0, 80% 50%, 0 100%); /* makes a ">" */
+    background: #fff;
+    border: 2px solid black;
+}
+
+/* the real XYFlow handle hitbox (invisible) */
+.rf-hitbox {
+    width: 14px !important; height: 14px !important;
+    background: transparent !important; border: none !important;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;

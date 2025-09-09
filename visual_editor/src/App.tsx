@@ -10,10 +10,14 @@ import { useState, useCallback } from 'react';
 import { datarefs } from './data/datarefs';
 import '@xyflow/react/dist/style.css';
 import ExistingDatarefNode from './nodes/existingDataref';
+import WriteToDatarefNode from './nodes/writeToDataref';
+import CallbackNode from './nodes/callbacks';
 import Toolbar from './components/toolbar';
 
 const nodeTypes = {
     existingDataref: ExistingDatarefNode,
+    xplaneCallback: CallbackNode,
+    writeToDataref: WriteToDatarefNode,
 }
 
 console.log(datarefs);

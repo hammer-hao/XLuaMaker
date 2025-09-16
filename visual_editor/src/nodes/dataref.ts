@@ -1,6 +1,7 @@
 import { ClassicPreset} from "rete";
 import {dataSocket } from "../sockets/sockets";
-import type {Dataref} from "../types/types.ts";
+import {DatarefSelectControl} from "../controls/DatarefSelectControl.tsx";
+import {datarefs} from "../data/datarefs.ts";
 
 /**
  * Represents a node for reading data from a data reference within a node-based system.
@@ -8,17 +9,10 @@ import type {Dataref} from "../types/types.ts";
  */
 export class DatarefNode extends ClassicPreset.Node {
     // hold optional datarefs + current value
-    data: {
-        datarefs: Dataref[];
-        value?: string;
-    }
-    constructor(datarefs: Dataref[])
+    constructor()
     {
         super("dataref");
         this.addOutput('out', new ClassicPreset.Output(dataSocket));
-        this.data = {
-            datarefs: datarefs,
-            value: "",
-        }
+        this.addControl("dataref", new DatarefSelectControl("", datarefs));
     }
 }

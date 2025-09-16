@@ -1,5 +1,6 @@
 import { ClassicPreset} from "rete";
 import { dataSocket, booleanSocket } from "../sockets/sockets";
+import {ComparisonSelectControl} from "../controls/ComparisonSelectControl.tsx";
 
 /**
  * The CompareNode class is used to create a node that compares two input values.
@@ -14,5 +15,6 @@ export class CompareNode extends ClassicPreset.Node {
         this.addInput('in1', new ClassicPreset.Input(dataSocket));
         this.addInput('in2', new ClassicPreset.Input(dataSocket));
         this.addOutput('out', new ClassicPreset.Output(booleanSocket));
+        this.addControl("compare", new ComparisonSelectControl(""));
     }
 }

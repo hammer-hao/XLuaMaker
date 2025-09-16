@@ -1,8 +1,8 @@
 import { ClassicPreset, NodeEditor } from "rete";
-import { ExecSocket, DataSocket, BooleanSocket } from "./sockets/sockets.ts";
+import { ColoredSocket } from "./sockets/sockets.ts";
 import type {Schemes} from "./types";
 
-type Sockets = ExecSocket | DataSocket | BooleanSocket
+type Sockets = ColoredSocket
 type Input = ClassicPreset.Input<Sockets>
 type Output = ClassicPreset.Output<Sockets>
 

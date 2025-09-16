@@ -1,5 +1,7 @@
 import { ClassicPreset } from "rete";
 import { execSocket, dataSocket } from "../sockets/sockets";
+import {DatarefSelectControl} from "../controls/DatarefSelectControl.tsx";
+import {writableDatarefs} from "../data/datarefs.ts";
 
 /**
  * Represents a node for writing to a data reference within a node-based system.
@@ -16,5 +18,6 @@ export class WriteToDatarefNode extends ClassicPreset.Node {
         super("write-to-dataref");
         this.addInput('exec', new ClassicPreset.Input(execSocket));
         this.addInput('data', new ClassicPreset.Input(dataSocket));
+        this.addControl("dataref", new DatarefSelectControl("", writableDatarefs));
     }
 }

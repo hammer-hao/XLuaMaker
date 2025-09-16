@@ -1,5 +1,6 @@
 import { ClassicPreset} from "rete";
 import { execSocket } from "../sockets/sockets";
+import {CallbackSelectControl} from "../controls/CallbackSelectControl.tsx";
 
 /**
  * Represents a callback node in the ClassicPreset system.
@@ -17,5 +18,6 @@ export class CallbackNode extends ClassicPreset.Node
     {
         super("callback");
         this.addOutput('out', new ClassicPreset.Output(execSocket));
+        this.addControl("callback", new CallbackSelectControl(""));
     }
 }

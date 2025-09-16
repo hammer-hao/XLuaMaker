@@ -21,9 +21,13 @@ import {
 } from "./nodes"
 import {DatarefSelectControl} from "./controls/DatarefSelectControl.tsx";
 import {DatarefSelectControlView} from "./renderer/DatarefSelectControlView.tsx";
+import {ComparisonSelectControl} from "./controls/ComparisonSelectControl.tsx";
+import {ComparisonSelectComponent} from "./renderer/ComparisonSelectComponent.tsx";
 
 // Data
-import {datarefs} from "./data/datarefs.ts";
+import type {ColoredSocket} from "./sockets/sockets.ts";
+import {CallbackSelectControl} from "./controls/CallbackSelectControl.tsx";
+import {CallbackSelectComponent} from "./renderer/CallbackSelectComponent.tsx";
 
 // basic setup
 type Schemes = GetSchemes<
@@ -42,22 +46,48 @@ export async function createEditor(container: HTMLElement) {
         accumulating: AreaExtensions.accumulateOnCtrl(),
     });
 
+    // @ts-ignore
     render.addPreset(
         Presets.classic.setup({
             customize: {
-                control({ payload, node }) {
-                    if (payload instanceof DatarefSelectControl) {
-                        return (props: { data: ClassicPreset.Control }) => (
-                            <DatarefSelectControlView control={props.data} node={node as DatarefNode} />
-                        );
+                control(data) {
+                    console.log('rendering dataref select');
+                    console.log(data.payload);
+                    if (data.payload instanceof DatarefSelectControl) {
+                        return DatarefSelectControlView;
+                    }
+                    if (data.payload instanceof ComparisonSelectControl) {
+                        return ComparisonSelectComponent;
+                    }
+                    if (data.payload instanceof CallbackSelectControl) {
+                        return CallbackSelectComponent;
                     }
                     return null;
-                }
+                },
+                socket() {
+                    // Must return a component that accepts { data: Socket }
+                    return (props: { data: ClassicPreset.Socket }) => {
+                        console.log('rendering socket');
+                        const s = props.data as Partial<ColoredSocket>;
+                        const color = s?.color ?? "#888";
+
+                        return (
+                            <div
+                                style={{
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: "50%",
+                                    background: color,
+                                    boxShadow: `0 0 0 2px ${color}22`,
+                                    flex: "0 0 auto",
+                                }}
+                            />
+                        );
+                    };
+                },
             }
         })
-    )
-
-    render.addPreset(Presets.classic.setup());
+    );
 
     connection.addPreset(ConnectionPresets.classic.setup());
 
@@ -82,8 +112,8 @@ export async function createEditor(container: HTMLElement) {
 
     const c = new CallbackNode();
     const w = new WriteToDatarefNode();
-    const d = new DatarefNode(datarefs);
-    d.addControl("dataref", new DatarefSelectControl());
+    const d = new DatarefNode();
+    const comp = new CompareNode()
     const a = new AddNode();
     const s = new SubtractNode();
     const m = new MultiplyNode();
@@ -98,6 +128,7 @@ export async function createEditor(container: HTMLElement) {
     await editor.addNode(m);
     await editor.addNode(c2);
     await editor.addNode(i);
+    await editor.addNode(comp);
 
     setTimeout(() => {
         // wait until nodes rendered because they dont have predefined width and height

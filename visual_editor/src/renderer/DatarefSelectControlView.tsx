@@ -1,28 +1,18 @@
-import { useCallback, useMemo } from "react";
 import Select from "react-select";
-import { ClassicPreset } from "rete";
-import { DatarefNode } from "../nodes";
+import type {DatarefSelectControl} from "../controls/DatarefSelectControl.tsx";
 
-type Props = { control: ClassicPreset.Control; node: DatarefNode };
-
-export function DatarefSelectControlView({control, node}: Props)
+export function DatarefSelectControlView(props: { data: DatarefSelectControl })
 {
-    const options = useMemo(
-        () => node.data.datarefs.map((d) => ({ value: d.name, label: d.name })),
-        [node.data.datarefs]
-    );
+    const options = props.data.options.map((d) => ({ value: d.name, label: d.name }));
 
-    const selected = useMemo(
-        () => options.find((o) => o.value === (node.data.value ?? "")) ?? null,
-        [options, node.data.value]
-    );
+    const selected =
+        options.find((o) => o.value === (props.data.value ?? "")) ?? null;
 
-    const onChange = useCallback((opt: { value: string; label: string } | null) =>
-        {
-            node.data.value = opt?.value ?? "";
-        },
-        [node]
-    );
+    const onChange = (opt: { value: string; label: string } | null) => {
+        const next = opt?.value ?? "";
+        props.data.value = next;
+        props.data.onChange?.(next); // optional callback hook
+    };
 
     return (
         <div onPointerDown={(e) => e.stopPropagation()}>

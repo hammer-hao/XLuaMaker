@@ -4,3 +4,5 @@ import type { Dataref } from '../types/types';
 
 // Parse once when this module is imported
 export const datarefs: Dataref[] = parseDatarefTsv(tsv);
+
+export const writableDatarefs = datarefs.filter(d => d.writable);

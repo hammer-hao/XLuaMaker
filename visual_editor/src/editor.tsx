@@ -1,0 +1,125 @@
+import { createRoot } from "react-dom/client";
+import { NodeEditor, ClassicPreset } from "rete";
+import { AreaPlugin, AreaExtensions } from "rete-area-plugin";
+import {
+    ConnectionPlugin,
+    Presets as ConnectionPresets,
+} from "rete-connection-plugin";
+import { ReactPlugin, Presets, type ReactArea2D } from "rete-react-plugin";
+import { getConnectionSockets } from "./utils";
+
+// custom nodes
+import {DatarefSelectControl} from "./controls/DatarefSelectControl.tsx";
+import {DatarefSelectControlView} from "./renderer/DatarefSelectControlView.tsx";
+import {ComparisonSelectControl} from "./controls/ComparisonSelectControl.tsx";
+import {ComparisonSelectComponent} from "./renderer/ComparisonSelectComponent.tsx";
+
+// Data
+import type {ColoredSocket} from "./sockets/sockets.ts";
+import {CallbackSelectControl} from "./controls/CallbackSelectControl.tsx";
+import {CallbackSelectComponent} from "./renderer/CallbackSelectComponent.tsx";
+import {ValueInputControl} from "./controls/ValueInputControl.tsx";
+import {ValueInputComponent} from "./renderer/ValueInputComponent.tsx";
+import {XluaMakerContextMenu} from "./contextMenu/ContextMenu.tsx";
+
+// basic setup
+import type {Schemes} from "./types.ts";
+import {type ContextMenuExtra } from "rete-context-menu-plugin";
+type AreaExtra = ReactArea2D<Schemes> | ContextMenuExtra;
+
+let _currentEditor: NodeEditor<Schemes> | null = null;
+export const getCurrentEditor = () => _currentEditor;
+
+export async function createEditor(container: HTMLElement) {
+    const editor = new NodeEditor<Schemes>();
+    const area = new AreaPlugin<Schemes, AreaExtra>(container);
+    const connection = new ConnectionPlugin<Schemes, AreaExtra>();
+    const render = new ReactPlugin<Schemes, AreaExtra>({ createRoot });
+
+    const contextMenu = new XluaMakerContextMenu<Schemes>();
+
+    AreaExtensions.selectableNodes(area, AreaExtensions.selector(), {
+        accumulating: AreaExtensions.accumulateOnCtrl(),
+    });
+
+    // @ts-ignore
+    render.addPreset(
+        Presets.classic.setup({
+            customize: {
+                control(data) {
+                    console.log('rendering dataref select');
+                    console.log(data.payload);
+                    if (data.payload instanceof DatarefSelectControl) {
+                        return DatarefSelectControlView;
+                    }
+                    if (data.payload instanceof ComparisonSelectControl) {
+                        return ComparisonSelectComponent;
+                    }
+                    if (data.payload instanceof CallbackSelectControl) {
+                        return CallbackSelectComponent;
+                    }
+                    if (data.payload instanceof ValueInputControl) {
+                        return ValueInputComponent;
+                    }
+                    return null;
+                },
+                socket() {
+                    // Must return a component that accepts { data: Socket }
+                    return (props: { data: ClassicPreset.Socket }) => {
+                        console.log('rendering socket');
+                        const s = props.data as Partial<ColoredSocket>;
+                        const color = s?.color ?? "#888";
+
+                        return (
+                            <div
+                                style={{
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: "50%",
+                                    background: color,
+                                    boxShadow: `0 0 0 2px ${color}22`,
+                                    flex: "0 0 auto",
+                                }}
+                            />
+                        );
+                    };
+                },
+            }
+        })
+    );
+
+    render.addPreset(Presets.contextMenu.setup());
+
+    connection.addPreset(ConnectionPresets.classic.setup());
+
+    editor.use(area);
+    area.use(contextMenu)
+    area.use(connection);
+    area.use(render);
+
+    AreaExtensions.simpleNodesOrder(area);
+
+    editor.addPipe((context) => {
+        if (context.type === "connectioncreate") {
+            const { data } = context;
+            const { source, target } = getConnectionSockets(editor, data);
+
+            if (source && target && !source.isCompatibleWith(target)) {
+                console.log("Sockets are not compatible", "error");
+                return;
+            }
+        }
+        return context;
+    });
+
+    setTimeout(() => {
+        // wait until nodes rendered because they dont have predefined width and height
+        AreaExtensions.zoomAt(area, editor.getNodes());
+    }, 10);
+
+    _currentEditor = editor;
+
+    return {
+        destroy: () => area.destroy(),
+    };
+}

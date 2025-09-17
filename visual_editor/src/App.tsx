@@ -1,63 +1,37 @@
-import {
-    ReactFlow,
-    Controls,
-    Background,
-    applyEdgeChanges,
-    applyNodeChanges,
-    addEdge
-} from '@xyflow/react';
-import { useState, useCallback } from 'react';
-import { datarefs } from './data/datarefs';
-import '@xyflow/react/dist/style.css';
-import ExistingDatarefNode from './nodes/existingDataref';
-import WriteToDatarefNode from './nodes/writeToDataref';
-import CallbackNode from './nodes/callbacks';
-import Toolbar from './components/toolbar';
+import {createEditor, getCurrentEditor} from "./editor.tsx";
+import { useRete } from "rete-react-plugin";
+import {buildIR} from "./codegen/IR/IR.tsx";
 
-const nodeTypes = {
-    existingDataref: ExistingDatarefNode,
-    xplaneCallback: CallbackNode,
-    writeToDataref: WriteToDatarefNode,
-}
+export default function App() {
+    const [ref] = useRete(createEditor);
 
-console.log(datarefs);
-
-function Flow() {
-    const [nodes, setNodes] = useState([]);
-    const [edges, setEdges] = useState([]);
-
-    const onNodesChange = useCallback(
-        (changes) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
-        [],
-    )
-
-    const onEdgesChange = useCallback(
-        (changes) => setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot)),
-        [],
-    )
-
-    const onConnect = useCallback(
-        (params) => setEdges((eds) => addEdge(params, eds)),
-        [],
-    )
+    const handleCreateIR = () => {
+        const editor = getCurrentEditor();
+        if (!editor) return;
+        const ir = buildIR(editor);   // pass editor in
+        console.log("IR:", ir)
+    };
 
     return (
-        <div style={{ height: '100%' }}>
-            <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                nodeTypes={nodeTypes}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                fitView
+        <div className="App" style={{ height: "100vh", width: "100vw", position: "relative" }}>
+            <div ref={ref} style={{ height: "100%", width: "100%" }} />
+
+            {/* floating debug button */}
+            <button
+                onClick={handleCreateIR}
+                style={{
+                    position: "absolute",
+                    top: "10px",
+                    right: "10px",
+                    padding: "6px 12px",
+                    background: "#fff",
+                    border: "1px solid #ccc",
+                    borderRadius: "6px",
+                    cursor: "pointer"
+                }}
             >
-                <Background />
-                <Controls />
-                <Toolbar />
-            </ReactFlow>
+                Create IR
+            </button>
         </div>
     );
 }
-
-export default Flow;

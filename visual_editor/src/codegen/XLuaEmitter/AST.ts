@@ -1,11 +1,11 @@
-import type {IRGraph, IRNode, NodeId} from "../IR/IR.tsx";
+import type {IRGraph, NodeId} from "../IR/IR.tsx";
 import {
-    AddExpr, DatarefExpr, DivideExpr,
-    type ExpressionEmitter,
-    MultiplyExpr,
+    AddExpr, AndExpr, CompareExpr, DatarefExpr, DivideExpr,
+    type ExpressionEmitter, IfStmt,
+    MultiplyExpr, NotExpr, OrExpr,
     StatementBlock,
     type StatementEmitter,
-    SubtractExpr
+    SubtractExpr, ValueExpr, WriteToDataref
 } from "./emitters.ts";
 
 const EXEC_OUT_PORTS = new Set(["next", "then", "else"]);
@@ -17,13 +17,6 @@ function getExecSuccessorIDs(g: IRGraph, n: NodeId): NodeId[] {
         .map(edge_id => g.edges[edge_id])
         .filter(edge => EXEC_OUT_PORTS.has(edge.source.port))
         .map(edge => edge.target.node);
-}
-
-function getExecPredecessorIDs(g: IRGraph, n: NodeId): NodeId[] {
-    return (g.inAdj[n] ?? [])
-        .map(edge_id => g.edges[edge_id])
-        .filter(edge => EXEC_OUT_PORTS.has(edge.source.port))
-        .map(edge => edge.source.node);
 }
 
 function isExitNode(g: IRGraph, n: NodeId)
@@ -103,6 +96,12 @@ function inputSrcNode(g: IRGraph, nodeId: NodeId, inputPort: string): NodeId {
     return g.edges[edgeId].source.node;
 }
 
+// find the node id of the output node
+function outputNode(g: IRGraph, nodeId: NodeId, outputPort: string): NodeId | undefined {
+    const edgeId = (g.outAdj[nodeId] ?? []).find(eid => g.edges[eid].source.port === outputPort);
+    return edgeId ? g.edges[edgeId].target.node : undefined;
+}
+
 function nodeToExprEmitter(g: IRGraph, nid: NodeId): ExpressionEmitter
 {
     const node = g.nodes[nid];
@@ -113,7 +112,7 @@ function nodeToExprEmitter(g: IRGraph, nid: NodeId): ExpressionEmitter
             const input_two = exprFromInput(g, nid, "in2");
             return new AddExpr(input_one, input_two);
         }
-        case "subtract" {
+        case "subtract": {
             const input_one = exprFromInput(g, nid, "in1");
             const input_two = exprFromInput(g, nid, "in2");
             return new SubtractExpr(input_one, input_two);
@@ -128,11 +127,33 @@ function nodeToExprEmitter(g: IRGraph, nid: NodeId): ExpressionEmitter
             const input_two = exprFromInput(g, nid, "in2");
             return new DivideExpr(input_one, input_two);
         }
+        case "not": {
+            const input_one = exprFromInput(g, nid, "in1");
+            return new NotExpr(input_one);
+        }
+        case "and": {
+            const input_one = exprFromInput(g, nid, "in1");
+            const input_two = exprFromInput(g, nid, "in2");
+            return new AndExpr(input_one, input_two);
+        }
+        case "or": {
+            const input_one = exprFromInput(g, nid, "in1");
+            const input_two = exprFromInput(g, nid, "in2");
+            return new OrExpr(input_one, input_two);
+        }
+        case "compare": {
+            const input_one = exprFromInput(g, nid, "in1");
+            const input_two = exprFromInput(g, nid, "in2");
+            return new CompareExpr(input_one, input_two, node.value);
+        }
         case "dataref": {
             return new DatarefExpr(node.value);
         }
         case "Value Input": {
             return new ValueExpr(node.value);
+        }
+        default: {
+            throw new Error(`Unknown node type: ${node.type}`);
         }
     }
 }
@@ -140,34 +161,71 @@ function nodeToExprEmitter(g: IRGraph, nid: NodeId): ExpressionEmitter
 // Build an ExpressionEmitter for an input port of a node
 function exprFromInput(g: IRGraph, nodeId: NodeId, inputPort: string): ExpressionEmitter {
     // Example: assume the source node’s `value` already holds a Lua literal/expression
-    const inEdgeId = (g.inAdj[nodeId] ?? []).find(eid => g.edges[eid].target.port === inputPort);
-    if (!inEdgeId) throw new Error(`Missing expression at ${nodeId}.${inputPort}`);
-    const src = g.edges[inEdgeId].source.node;
-    const code = g.nodes[src].value;
-    return { emitExpr: () => code };
+    const inputNodeId = inputSrcNode(g, nodeId, inputPort);
+    return nodeToExprEmitter(g, inputNodeId);
 }
 
-export function lowerIRGraph(g: IRGraph, immediatePostDominators: Record<NodeId, NodeId | undefined>,
+export function lowerIRRegion(g: IRGraph, immediatePostDominators: Record<NodeId, NodeId | undefined>,
                              start?: NodeId, stop?: NodeId): StatementBlock
 {
     const out: StatementEmitter[] = [];
-    let curr: NodeId | undefined = g.start;
+    let curr: NodeId | undefined = start;
 
     while (curr && curr !== stop)
     {
         const node = g.nodes[curr];
 
-        if (node.type === "if-else") {
+        switch (node.type) {
+            case "if-else": {
+                const cond = exprFromInput(g, curr, "cond");
+                const thenNode = outputNode(g, curr, THEN_PORT);
+                const elseNode = outputNode(g, curr, ELSE_PORT);
 
+                if (!thenNode) throw new Error("Missing then or else node");
+
+                // find the merge point
+                const merge = immediatePostDominators[curr];
+
+                const thenBlock = lowerIRRegion(g, immediatePostDominators, thenNode, merge);
+                const elseBlock = lowerIRRegion(g, immediatePostDominators, elseNode, merge);
+
+                out.push(new IfStmt(cond, thenBlock, elseBlock));
+
+                curr = merge;
+                continue;
+            }
+            case "write-to-dataref": {
+                const input = exprFromInput(g, curr, "data");
+                out.push(new WriteToDataref(input, g.nodes[curr].value));
+                const succs = getExecSuccessorIDs(g, curr);
+                if (succs.length > 1) {
+                    throw new Error("Write-to-dataref node has multiple successors");
+                }
+                curr = succs[0];
+                continue;
+            }
+            default: {
+                throw new Error("unhandled node type: " + node.type);
+            }
         }
     }
-
     return new StatementBlock(out);
 }
 
-export function lowerIRtoAST(g: IRGraph): StatementBlock
+
+export function lowerIRtoAST(g: IRGraph): [StatementBlock, string]
 {
     if (!g.start) throw new Error("IRGraph has no start node");
+    let wheretowrite: string = "";
+    if (g.nodes[g.start].type === "callback") {
+        wheretowrite = g.nodes[g.start].value;
+    }
+    else if (g.nodes[g.start].type === "command") {
+        wheretowrite = g.nodes[g.start].value;
+    }
     const postDominators = computeImmediatePostDominators(g);
-
+    const start = outputNode(g, g.start, "next");
+    if (!start) throw new Error("Start node has no next node");
+    const statementBlock = lowerIRRegion(g, postDominators, start);
+    return [statementBlock, wheretowrite];
 }

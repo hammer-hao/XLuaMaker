@@ -1,5 +1,10 @@
 import type {NodeEditor} from "rete";
 import type {Schemes} from "../../types.ts";
+import {DatarefSelectControl} from "../../controls/DatarefSelectControl.tsx";
+import {ComparisonSelectControl} from "../../controls/ComparisonSelectControl.tsx";
+import {ValueInputControl} from "../../controls/ValueInputControl.tsx";
+import {CallbackSelectControl} from "../../controls/CallbackSelectControl.tsx";
+import {lowerIRtoAST} from "../XLuaEmitter/AST.ts";
 
 export type NodeId = string;
 export type EdgeId = string;
@@ -76,10 +81,22 @@ export function buildIR(editor: NodeEditor<Schemes>){
     const edges = editor.getConnections();
 
     for (const node of nodes) {
+        const controls = node.controls;
+        console.log("control of node: ");
+        console.log(controls);
+        var value = "";
+        if (controls != undefined)
+        {
+            for (const control of Object.values(controls))
+            if (control instanceof DatarefSelectControl || control instanceof ComparisonSelectControl
+                || control instanceof ValueInputControl || control instanceof CallbackSelectControl) {
+                value = control.value;
+            }
+        }
         builder.addNode({
             id: String(node.id),
             type: node.label,
-            value: ""
+            value: value
         })
     }
 
@@ -93,4 +110,7 @@ export function buildIR(editor: NodeEditor<Schemes>){
 
     const g = builder.build();
     console.log("Graph:", g);
+
+    const ast = lowerIRtoAST(g);
+    console.log("AST:", ast);
 }

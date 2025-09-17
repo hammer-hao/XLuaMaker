@@ -8,9 +8,9 @@ import { execSocket, booleanSocket } from "../sockets/sockets";
 export class IfNode extends ClassicPreset.Node {
     constructor() {
         super("if-else");
-        this.addInput('in0', new ClassicPreset.Input(execSocket));
-        this.addInput('in1', new ClassicPreset.Input(booleanSocket));
-        this.addOutput('out', new ClassicPreset.Output(execSocket));
-        this.addOutput('out2', new ClassicPreset.Output(execSocket));
+        this.addInput('prev', new ClassicPreset.Input(execSocket));
+        this.addInput('cond', new ClassicPreset.Input(booleanSocket));
+        this.addOutput('then', new ClassicPreset.Output(execSocket));
+        this.addOutput('else', new ClassicPreset.Output(execSocket));
     }
 }

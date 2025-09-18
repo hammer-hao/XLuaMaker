@@ -5,6 +5,7 @@ import {ComparisonSelectControl} from "../../controls/ComparisonSelectControl.ts
 import {ValueInputControl} from "../../controls/ValueInputControl.tsx";
 import {CallbackSelectControl} from "../../controls/CallbackSelectControl.tsx";
 import {lowerIRtoAST} from "../XLuaEmitter/AST.ts";
+import {XLuaContext} from "../context/XLuaContext.ts";
 
 export type NodeId = string;
 export type EdgeId = string;
@@ -111,6 +112,13 @@ export function buildIR(editor: NodeEditor<Schemes>){
     const g = builder.build();
     console.log("Graph:", g);
 
-    const ast = lowerIRtoAST(g);
+    const [ast, wheretowrite] = lowerIRtoAST(g);
     console.log("AST:", ast);
+    console.log("Where to write:", wheretowrite);
+
+    const xp_context = new XLuaContext()
+    xp_context.push(ast, wheretowrite);
+
+    const out = xp_context.compile();
+    console.log("Output:", out);
 }

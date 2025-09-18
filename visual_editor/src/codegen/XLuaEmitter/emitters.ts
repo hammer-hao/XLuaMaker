@@ -1,12 +1,11 @@
 import type {Context} from "../context/XLuaContext.ts";
 
 export interface emitter {
-    emit(): string;
+    emit(context: Context): string;
 }
 
 export interface StatementEmitter extends emitter
 {
-    write(context: Context): void;
 }
 
 export class StatementBlock implements StatementEmitter {
@@ -14,16 +13,12 @@ export class StatementBlock implements StatementEmitter {
     constructor(body: StatementEmitter[]) {
         this.body = body;
     }
-    emit(): string {
+    emit(context: Context): string {
+        var out = ""
         for (const statement of this.body) {
-            statement.emit();
+            out += statement.emit(context) + "\n";
         }
-        return "";
-    }
-    write(context: Context): void {
-        for (const statement of this.body) {
-            statement.write(context);
-        }
+        return out;
     }
 }
 
@@ -38,8 +33,8 @@ export class AddExpr implements ExpressionEmitter {
         this.in1 = in1;
         this.in2 = in2;
     }
-    emit(): string {
-        return `(${this.in1.emit()} + ${this.in2.emit()})`;
+    emit(context: Context): string {
+        return `(${this.in1.emit(context)} + ${this.in2.emit(context)})`;
     }
 }
 
@@ -50,8 +45,8 @@ export class SubtractExpr implements ExpressionEmitter {
         this.in1 = in1;
         this.in2 = in2;
     }
-    emit(): string {
-        return `(${this.in1.emit()} - ${this.in2.emit()})`;
+    emit(context: Context): string {
+        return `(${this.in1.emit(context)} - ${this.in2.emit(context)})`;
     }
 }
 
@@ -62,8 +57,8 @@ export class MultiplyExpr implements ExpressionEmitter {
         this.in1 = in1;
         this.in2 = in2;
     }
-    emit(): string {
-        return `(${this.in1.emit()} * ${this.in2.emit()})`;
+    emit(context: Context): string {
+        return `(${this.in1.emit(context)} * ${this.in2.emit(context)})`;
     }
 }
 
@@ -74,8 +69,8 @@ export class DivideExpr implements ExpressionEmitter {
         this.in1 = in1;
         this.in2 = in2;
     }
-    emit(): string {
-        return `(${this.in1.emit()} / ${this.in2.emit()})`;
+    emit(context: Context): string {
+        return `(${this.in1.emit(context)} / ${this.in2.emit(context)})`;
     }
 }
 
@@ -88,8 +83,8 @@ export class CompareExpr implements ExpressionEmitter {
         this.in2 = in2;
         this.operator = operator;
     }
-    emit(): string {
-        return `(${this.in1.emit()} ${this.operator} ${this.in2.emit()})`;
+    emit(context: Context): string {
+        return `(${this.in1.emit(context)} ${this.operator} ${this.in2.emit(context)})`;
     }
 }
 
@@ -100,8 +95,8 @@ export class AndExpr implements ExpressionEmitter {
         this.in1 = in1;
         this.in2 = in2;
     }
-    emit(): string {
-        return `(${this.in1.emit()} and ${this.in2.emit()})`;
+    emit(context: Context): string {
+        return `(${this.in1.emit(context)} and ${this.in2.emit(context)})`;
     }
 }
 
@@ -112,8 +107,8 @@ export class OrExpr implements ExpressionEmitter {
         this.in1 = in1;
         this.in2 = in2;
     }
-    emit(): string {
-        return `(${this.in1.emit()} or ${this.in2.emit()})`;
+    emit(context: Context): string {
+        return `(${this.in1.emit(context)} or ${this.in2.emit(context)})`;
     }
 }
 
@@ -122,8 +117,8 @@ export class NotExpr implements ExpressionEmitter {
     constructor(in1: ExpressionEmitter) {
         this.in1 = in1;
     }
-    emit(): string {
-        return `!${this.in1.emit()}`;
+    emit(context: Context): string {
+        return `!${this.in1.emit(context)}`;
     }
 }
 
@@ -132,8 +127,8 @@ export class DatarefExpr implements ExpressionEmitter {
     constructor(alias: string) {
         this.alias = alias;
     }
-    emit(): string {
-        return this.alias;
+    emit(context: Context): string {
+        return context.register_dataref(this.alias);
     }
 }
 
@@ -142,7 +137,7 @@ export class ValueExpr implements ExpressionEmitter {
     constructor(value: string) {
         this.value = value;
     }
-    emit(): string {
+    emit(_context: Context): string {
         return this.value;
     }
 }
@@ -154,11 +149,16 @@ export class WriteToDataref implements StatementEmitter {
         this.in1 = in1;
         this.target = target;
     }
-    emit(): string {
-        return `${this.target} = ${this.in1.emit()} `;
+    emit(context: Context): string {
+        return `${context.register_dataref(this.target)} = ${this.in1.emit(context)} `;
     }
-    write(context: Context) {
-        context.push(`${this.target} = ${this.in1.emit()}`);
+}
+
+export class CommandExpr implements ExpressionEmitter {
+    constructor() {
+    }
+    emit(_context: Context): string {
+        return "phase";
     }
 }
 
@@ -171,18 +171,7 @@ export class IfStmt implements StatementEmitter {
         this.thenBlock = thenBlock;
         this.elseBlock = elseBlock;
     }
-    emit(): string {
-        return `if ${this.condition.emit()} then ${this.thenBlock.emit()} else ${this.elseBlock.emit()} end`;
-    }
-
-    write(context: Context) {
-        context.push(`if ${this.condition.emit()} then`);
-        this.thenBlock.write(context);
-        if (this.elseBlock)
-        {
-            context.push(`else`);
-            this.elseBlock.write(context);
-        }
-        context.push(`end`);
+    emit(context: Context): string {
+        return `if ${this.condition.emit(context)} then\n${this.thenBlock.emit(context)}\nelse\n${this.elseBlock.emit(context)}\nend\n`;
     }
 }

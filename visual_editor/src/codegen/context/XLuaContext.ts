@@ -1,8 +1,9 @@
+import {StatementBlock} from "../XLuaEmitter/emitters.ts";
+
 export interface Context {
     register_dataref(name: string): string;
     register_command(name: string): string;
-    push(statement: string): void;
-    switch_context(context: string): void;
+    push(block: StatementBlock, wheretowrite: string): void;
     compile(): string;
 }
 
@@ -37,6 +38,21 @@ class func_write_context implements writable {
     }
 }
 
+class command_write_context implements writable {
+    name: string;
+    lines: string[] = [];
+    constructor(name: string) {
+        this.name = name;
+        this.lines = [];
+    }
+    write(statement: string): void {
+        this.lines.push(statement);
+    }
+    emit(): string {
+        return `function ${this.name}(phase, duration)\n` + this.lines.join("\n") + "\nend";
+    }
+}
+
 class main_write_context implements writable {
     lines: string[] = [];
     constructor() {
@@ -52,6 +68,7 @@ class main_write_context implements writable {
 
 export class XLuaContext implements Context{
     public datarefs: Record<string, Dataref> = {};
+    public cutom_datarefs: Record<string, Dataref> = {};
     public commands: Record<string, Command> = {};
     public available_writables: Record<string, writable> = {
         "main": new main_write_context(),
@@ -68,8 +85,15 @@ export class XLuaContext implements Context{
         this.current_writable = this.available_writables["main"];
     }
 
-    push(statement: string): void {
-        this.current_writable.write(statement);
+    push(block: StatementBlock, wheretowrite: string): void {
+        if (wheretowrite in this.available_writables) {
+            this.switch_context(wheretowrite);
+        }
+        else {
+            const new_context = this.register_command(wheretowrite)
+            this.switch_context(new_context);
+        }
+        this.current_writable.write(block.emit(this));
     }
 
     switch_context(context: string) {
@@ -83,11 +107,17 @@ export class XLuaContext implements Context{
             lines: []
         }
         this.commands[command.handler_name] = command;
-        this.available_writables[command.handler_name] = new func_write_context(command.handler_name);
+        this.available_writables[command.handler_name] = new command_write_context(command.handler_name);
         return command.handler_name;
     }
 
     register_dataref(name: string): string {
+        if (name in this.datarefs) {
+            return this.datarefs[name].lua_name;
+        }
+        if (name in this.cutom_datarefs) {
+            return this.cutom_datarefs[name].lua_name;
+        }
         let last = name.split("/").pop() ?? name;
         last = last.replace(/[\[\]]/g, "");
         const dataref = {
@@ -101,11 +131,11 @@ export class XLuaContext implements Context{
 
     compile(): string {
         var result: string = "";
-        for (const [name, dataref] of Object.entries(this.datarefs)) {
-            result += `${name} = find_dataref("${dataref.xplane_name}")\n`;
+        for (const dataref of Object.values(this.datarefs)) {
+            result += `${dataref.lua_name} = find_dataref("${dataref.xplane_name}")\n`;
         }
         for (const [handlername, command] of Object.entries(this.commands)) {
-            result += `register_command("${command.xplane_name}", ${handlername})\n`;
+            result += `register_command("${command.xplane_name}", "placeholder", ${handlername})\n`;
         }
         for (const writable of Object.values(this.available_writables)) {
             result += writable.emit() + "\n";

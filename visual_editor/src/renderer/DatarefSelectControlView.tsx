@@ -15,11 +15,12 @@ export function DatarefSelectControlView(props: { data: DatarefSelectControl })
     };
 
     return (
-        <div onPointerDown={(e) => e.stopPropagation()}>
+        <div onPointerDown={(e) => e.stopPropagation()} style={{ minWidth: "250px" }}>
             <Select
                 options={options}
                 value={selected}
                 onChange={onChange as any}
+                menuPortalTarget={document.body}
                 isClearable
                 placeholder="Select a dataref"
             />

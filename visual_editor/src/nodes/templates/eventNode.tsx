@@ -4,6 +4,8 @@ import { css } from "styled-components";
 /** UE5-ish node styles */
 const ueBlueprintNode = css<{ selected?: boolean }>`
     /* Card */
+    width: auto;
+    height: auto;
     background: linear-gradient(180deg, #2e2f36 0%, #23252b 100%);
     border: 1px solid #1a1c22;
     border-radius: 12px;

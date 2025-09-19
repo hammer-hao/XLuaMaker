@@ -1,5 +1,5 @@
 import { ClassicPreset } from "rete";
-import { execSocket } from "../sockets/sockets";
+import {dataSocket, execSocket} from "../sockets/sockets";
 import {ValueInputControl} from "../controls/ValueInputControl.tsx";
 
 /**
@@ -10,7 +10,9 @@ export class CommandNode extends ClassicPreset.Node {
     constructor()
     {
         super("command");
-        this.addOutput('next', new ClassicPreset.Input(execSocket));
+        this.addOutput('next', new ClassicPreset.Input(execSocket, "next"));
+        this.addOutput('phase', new ClassicPreset.Output(dataSocket, "phase"));
+        this.addOutput('duration', new ClassicPreset.Output(dataSocket, "duration"));
         this.addControl("command_input", new ValueInputControl())
     }
 }

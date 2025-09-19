@@ -9,8 +9,8 @@ export class AndNode extends ClassicPreset.Node {
     constructor()
     {
         super("and");
-        this.addInput('in1', new ClassicPreset.Input(booleanSocket));
-        this.addInput('in2', new ClassicPreset.Input(booleanSocket));
-        this.addOutput('out', new ClassicPreset.Output(booleanSocket));
+        this.addInput('in1', new ClassicPreset.Input(booleanSocket, "boolean"));
+        this.addInput('in2', new ClassicPreset.Input(booleanSocket, "boolean"));
+        this.addOutput('out', new ClassicPreset.Output(booleanSocket, "and"));
     }
 }

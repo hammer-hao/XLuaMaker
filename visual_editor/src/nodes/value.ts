@@ -10,7 +10,7 @@ export class ValueNode extends ClassicPreset.Node {
     constructor()
     {
         super("Value Input");
-        this.addOutput('out', new ClassicPreset.Output(dataSocket));
+        this.addOutput('out', new ClassicPreset.Output(dataSocket, "value"));
         this.addControl("value_input", new ValueInputControl());
     }
 }

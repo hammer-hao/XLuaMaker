@@ -12,9 +12,9 @@ import {ComparisonSelectControl} from "../controls/ComparisonSelectControl.tsx";
 export class CompareNode extends ClassicPreset.Node {
     constructor() {
         super("compare");
-        this.addInput('in1', new ClassicPreset.Input(dataSocket));
-        this.addInput('in2', new ClassicPreset.Input(dataSocket));
-        this.addOutput('out', new ClassicPreset.Output(booleanSocket));
+        this.addInput('in1', new ClassicPreset.Input(dataSocket, "value"));
+        this.addInput('in2', new ClassicPreset.Input(dataSocket, "value"));
+        this.addOutput('out', new ClassicPreset.Output(booleanSocket, "result"));
         this.addControl("compare", new ComparisonSelectControl(""));
     }
 }

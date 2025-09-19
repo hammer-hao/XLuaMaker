@@ -25,6 +25,9 @@ import {XluaMakerContextMenu} from "./contextMenu/ContextMenu.tsx";
 // basic setup
 import type {Schemes} from "./types.ts";
 import {type ContextMenuExtra } from "rete-context-menu-plugin";
+import {ArithmaticNode} from "./nodes/templates/arithmaticNode.tsx";
+import {LogicNode} from "./nodes/templates/logicNode.tsx";
+import {EventNode} from "./nodes/templates/eventNode.tsx";
 type AreaExtra = ReactArea2D<Schemes> | ContextMenuExtra;
 
 let _currentEditor: NodeEditor<Schemes> | null = null;
@@ -46,6 +49,30 @@ export async function createEditor(container: HTMLElement) {
     render.addPreset(
         Presets.classic.setup({
             customize: {
+                node(context) {
+                    if (context.payload.label === "add" ||
+                        context.payload.label === "subtract" ||
+                        context.payload.label === "multiply" ||
+                        context.payload.label === "divide" ||
+                        context.payload.label === "Value Input" ||
+                        context.payload.label === "dataref") {
+                        return ArithmaticNode;
+                    } else if (
+                        context.payload.label === "and" ||
+                        context.payload.label === "or" ||
+                        context.payload.label === "not" ||
+                        context.payload.label === "compare") {
+                        return LogicNode;
+                    } else if (
+                        context.payload.label === "callback" ||
+                        context.payload.label === "command" ||
+                        context.payload.label === "if-else" ||
+                        context.payload.label === "write-to-dataref"
+                    ) {
+                        return EventNode;
+                    }
+                    return Presets.classic.Node<Schemes>;
+                },
                 control(data) {
                     console.log('rendering dataref select');
                     console.log(data.payload);

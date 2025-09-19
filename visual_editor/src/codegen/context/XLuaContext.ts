@@ -134,11 +134,11 @@ export class XLuaContext implements Context{
         for (const dataref of Object.values(this.datarefs)) {
             result += `${dataref.lua_name} = find_dataref("${dataref.xplane_name}")\n`;
         }
-        for (const [handlername, command] of Object.entries(this.commands)) {
-            result += `register_command("${command.xplane_name}", "placeholder", ${handlername})\n`;
-        }
         for (const writable of Object.values(this.available_writables)) {
             result += writable.emit() + "\n";
+        }
+        for (const [handlername, command] of Object.entries(this.commands)) {
+            result += `register_command("${command.xplane_name}", "placeholder", ${handlername})\n`;
         }
         return result;
     }

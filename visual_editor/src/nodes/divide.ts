@@ -9,8 +9,8 @@ export class DivideNode extends ClassicPreset.Node {
     constructor()
     {
         super("divide");
-        this.addInput('in1', new ClassicPreset.Input(dataSocket));
-        this.addInput('in2', new ClassicPreset.Input(dataSocket));
-        this.addOutput('out', new ClassicPreset.Output(dataSocket));
+        this.addInput('in1', new ClassicPreset.Input(dataSocket, "dividend"));
+        this.addInput('in2', new ClassicPreset.Input(dataSocket, "divisor"));
+        this.addOutput('out', new ClassicPreset.Output(dataSocket, "quotient"));
     }
 }

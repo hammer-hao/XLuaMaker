@@ -17,7 +17,7 @@ export class CallbackNode extends ClassicPreset.Node
     constructor()
     {
         super("callback");
-        this.addOutput('next', new ClassicPreset.Output(execSocket));
+        this.addOutput('next', new ClassicPreset.Output(execSocket, "next"));
         this.addControl("callback", new CallbackSelectControl(""));
     }
 }

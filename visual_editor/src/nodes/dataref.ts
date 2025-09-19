@@ -12,7 +12,7 @@ export class DatarefNode extends ClassicPreset.Node {
     constructor()
     {
         super("dataref");
-        this.addOutput('out', new ClassicPreset.Output(dataSocket));
+        this.addOutput('out', new ClassicPreset.Output(dataSocket, "value"));
         this.addControl("dataref", new DatarefSelectControl("", datarefs));
     }
 }

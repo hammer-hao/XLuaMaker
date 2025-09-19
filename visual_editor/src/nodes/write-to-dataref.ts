@@ -16,9 +16,9 @@ export class WriteToDatarefNode extends ClassicPreset.Node {
     constructor()
     {
         super("write-to-dataref");
-        this.addInput('prev', new ClassicPreset.Input(execSocket));
-        this.addInput('data', new ClassicPreset.Input(dataSocket));
-        this.addOutput('next', new ClassicPreset.Output(execSocket));
+        this.addInput('prev', new ClassicPreset.Input(execSocket, "exec"));
+        this.addInput('data', new ClassicPreset.Input(dataSocket, "value"));
+        this.addOutput('next', new ClassicPreset.Output(execSocket, "next"));
         this.addControl("dataref", new DatarefSelectControl("", writableDatarefs));
     }
 }

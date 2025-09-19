@@ -9,8 +9,8 @@ export class SubtractNode extends ClassicPreset.Node {
     constructor()
     {
         super("subtract");
-        this.addInput('in1', new ClassicPreset.Input(dataSocket));
-        this.addInput('in2', new ClassicPreset.Input(dataSocket));
-        this.addOutput('out', new ClassicPreset.Output(dataSocket));
+        this.addInput('in1', new ClassicPreset.Input(dataSocket, "value"));
+        this.addInput('in2', new ClassicPreset.Input(dataSocket, "value"));
+        this.addOutput('out', new ClassicPreset.Output(dataSocket, "difference"));
     }
 }

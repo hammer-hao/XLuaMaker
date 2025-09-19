@@ -83,8 +83,6 @@ export function buildIR(editor: NodeEditor<Schemes>){
 
     for (const node of nodes) {
         const controls = node.controls;
-        console.log("control of node: ");
-        console.log(controls);
         var value = "";
         if (controls != undefined)
         {
@@ -102,9 +100,22 @@ export function buildIR(editor: NodeEditor<Schemes>){
     }
 
     for (const edge of edges) {
+        let srcNode: NodeId = edge.source;
+        if (edge.sourceOutput === "phase" || edge.sourceOutput === "duration")
+        {
+            console.log("Edge:", edge);
+            const pseudoId = `pseudo:${edge.id}:${edge.sourceOutput}`;
+            // generate fake value nodes
+            builder.addNode({
+                id: pseudoId,
+                type: "Value Input",
+                value: edge.sourceOutput
+            })
+            srcNode = pseudoId;
+        }
         builder.addEdge({
             id: String(edge.id),
-            source: { node: edge.source, port: edge.sourceOutput },
+            source: { node: srcNode, port: edge.sourceOutput },
             target: { node: edge.target, port: edge.targetInput }
         })
     }

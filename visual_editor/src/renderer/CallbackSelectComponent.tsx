@@ -39,6 +39,7 @@ export function CallbackSelectComponent(props: { data: CallbackSelectControl}) {
                 value={selected}
                 options={options}
                 onChange={onChange as any}
+                menuPortalTarget={document.body}
                 placeholder="select a callback"
                 // Optional QoL:
                 isClearable

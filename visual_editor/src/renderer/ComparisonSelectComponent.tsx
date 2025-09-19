@@ -42,6 +42,7 @@ export function ComparisonSelectComponent(props: { data: ComparisonSelectControl
                 value={selected}
                 options={options}
                 onChange={onChange as any}
+                menuPortalTarget={document.body}
                 placeholder="…"
                 // Optional QoL:
                 isClearable

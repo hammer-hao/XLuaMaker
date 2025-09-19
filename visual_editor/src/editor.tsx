@@ -30,6 +30,18 @@ import {LogicNode} from "./nodes/templates/logicNode.tsx";
 import {EventNode} from "./nodes/templates/eventNode.tsx";
 type AreaExtra = ReactArea2D<Schemes> | ContextMenuExtra;
 
+const ControlView: React.FC<{ data: ClassicPreset.Control }> = ({ data }) => {
+    if (data instanceof DatarefSelectControl)
+        return <DatarefSelectControlView data={data} />;
+    if (data instanceof ComparisonSelectControl)
+        return <ComparisonSelectComponent data={data} />;
+    if (data instanceof CallbackSelectControl)
+        return <CallbackSelectComponent data={data} />;
+    if (data instanceof ValueInputControl)
+        return <ValueInputComponent data={data} />;
+    return null;
+};
+
 let _currentEditor: NodeEditor<Schemes> | null = null;
 export const getCurrentEditor = () => _currentEditor;
 
@@ -73,22 +85,8 @@ export async function createEditor(container: HTMLElement) {
                     }
                     return Presets.classic.Node<Schemes>;
                 },
-                control(data) {
-                    console.log('rendering dataref select');
-                    console.log(data.payload);
-                    if (data.payload instanceof DatarefSelectControl) {
-                        return DatarefSelectControlView;
-                    }
-                    if (data.payload instanceof ComparisonSelectControl) {
-                        return ComparisonSelectComponent;
-                    }
-                    if (data.payload instanceof CallbackSelectControl) {
-                        return CallbackSelectComponent;
-                    }
-                    if (data.payload instanceof ValueInputControl) {
-                        return ValueInputComponent;
-                    }
-                    return null;
+                control() {
+                    return ControlView;
                 },
                 socket() {
                     // Must return a component that accepts { data: Socket }

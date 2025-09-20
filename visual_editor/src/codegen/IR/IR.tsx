@@ -132,4 +132,6 @@ export function buildIR(editor: NodeEditor<Schemes>){
 
     const out = xp_context.compile();
     console.log("Output:", out);
+
+    return out;
 }

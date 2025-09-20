@@ -6,6 +6,8 @@ const ueBlueprintNode = css<{ selected?: boolean }>`
     /* Card */
     width: auto;
     height: auto;
+    min-width: 160px;      /* optional: to avoid too small nodes */
+    max-width: 400px;
     background: linear-gradient(180deg, #2e2f36 0%, #23252b 100%);
     border: 1px solid #1a1c22;
     border-radius: 12px;
